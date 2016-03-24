@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.nutch.scoring.similarity.util.LuceneAnalyzerUtil.StemFilterType;
 
@@ -80,6 +81,12 @@ public class LuceneTokenizer {
     tokenStream = createTokenStream(content);
   }
   
+
+   public LuceneTokenizer(String content, TokenizerType tokenizer, boolean useStopFilter, StemFilterType stemFilterType, int n) {
+    this.tokenizer = tokenizer;
+    tokenStream = createNGramTokenStream(content,n);
+    
+  }
   /**
    * Returns the tokenStream created by the Tokenizer
    * @return
@@ -110,6 +117,25 @@ public class LuceneTokenizer {
     return tokenStream;
   }
   
+    public TokenStream getNGramTokenStream() {
+    return tokenStream;
+  }
+  
+  private TokenStream createNGramTokenStream(String content, int n) {
+    tokenStream = generateNGramTokenStreamFromText(content, n);
+    tokenStream = new LowerCaseFilter(tokenStream);
+    return tokenStream;
+  }
+  
+  private TokenStream generateNGramTokenStreamFromText(String content, int n){
+   
+    tokenStream = new StandardTokenizer(new StringReader(content));
+    ShingleFilter shingleFilter = new ShingleFilter(tokenStream, 2, n);
+    shingleFilter.setOutputUnigrams(false);
+    tokenStream = (TokenStream)shingleFilter;
+    return tokenStream;
+  }
+
   private TokenStream applyStopFilter(CharArraySet stopWords) {
     tokenStream = new StopFilter(tokenStream, stopWords); 
     return tokenStream;
