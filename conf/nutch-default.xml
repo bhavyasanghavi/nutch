@@ -1444,7 +1444,7 @@ visit https://wiki.apache.org/nutch/SimilarityScoringFilter-->
 
  <property>
   <name>scoring.similarity.ngrams</name>
-  <value>2</value>
+  <value>1</value>
   <description>Specifies the 'n' in ngrams</description>
 </property>
 

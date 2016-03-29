@@ -37,9 +37,9 @@ public class LuceneTokenizer {
   private TokenizerType tokenizer;
   private StemFilterType stemFilterType;
   private CharArraySet stopSet = null;
-  
+
   public static enum TokenizerType {CLASSIC, STANDARD}
-  
+
   /**
    * Creates a tokenizer based on param values
    * @param content - The text to tokenize
@@ -55,7 +55,7 @@ public class LuceneTokenizer {
     }
     tokenStream = createTokenStream(content);
   }
-  
+
   /**
    * Creates a tokenizer based on param values
    * @param content - The text to tokenize
@@ -80,19 +80,19 @@ public class LuceneTokenizer {
     }
     tokenStream = createTokenStream(content);
   }
-  
 
-   public LuceneTokenizer(String content, TokenizerType tokenizer, boolean useStopFilter, StemFilterType stemFilterType, int n) {
-    this.tokenizer = tokenizer;
-    tokenStream = createNGramTokenStream(content,n);
-    
-  }
   /**
    * Returns the tokenStream created by the Tokenizer
    * @return
    */
   public TokenStream getTokenStream() {
     return tokenStream;
+  }
+  
+  public LuceneTokenizer(String content, TokenizerType tokenizer, StemFilterType stemFilterType, int ngram) {
+    this.tokenizer = tokenizer;
+    this.stemFilterType = stemFilterType;
+    tokenStream = createNGramTokenStream(content,ngram);
   }
   
   private TokenStream createTokenStream(String content) {
@@ -104,33 +104,24 @@ public class LuceneTokenizer {
     tokenStream = applyStemmer(stemFilterType);
     return tokenStream;
   }
-  
+
   private TokenStream generateTokenStreamFromText(String content, TokenizerType tokenizer){
     switch(tokenizer){
     case CLASSIC:
       tokenStream = new ClassicTokenizer(new StringReader(content));
       break;
-      
+
     case STANDARD:
       tokenStream = new StandardTokenizer(new StringReader(content));
     }
     return tokenStream;
   }
-  
-    public TokenStream getNGramTokenStream() {
-    return tokenStream;
-  }
-  
-  private TokenStream createNGramTokenStream(String content, int n) {
-    tokenStream = generateNGramTokenStreamFromText(content, n);
-    tokenStream = new LowerCaseFilter(tokenStream);
-    return tokenStream;
-  }
-  
-  private TokenStream generateNGramTokenStreamFromText(String content, int n){
-   
+
+  private TokenStream createNGramTokenStream(String content, int ngram) {
     tokenStream = new StandardTokenizer(new StringReader(content));
-    ShingleFilter shingleFilter = new ShingleFilter(tokenStream, 2, n);
+    tokenStream = new LowerCaseFilter(tokenStream);
+    tokenStream = applyStemmer(stemFilterType);
+    ShingleFilter shingleFilter = new ShingleFilter(tokenStream, ngram, ngram);
     shingleFilter.setOutputUnigrams(false);
     tokenStream = (TokenStream)shingleFilter;
     return tokenStream;
@@ -140,7 +131,7 @@ public class LuceneTokenizer {
     tokenStream = new StopFilter(tokenStream, stopWords); 
     return tokenStream;
   }
-  
+
   private TokenStream applyStemmer(StemFilterType stemFilterType) {
     switch(stemFilterType){
     case ENGLISHMINIMALSTEM_FILTER:
@@ -149,8 +140,8 @@ public class LuceneTokenizer {
     case PORTERSTEM_FILTER:
       tokenStream = new PorterStemFilter(tokenStream);
       break;
-     default:
-       break;
+    default:
+      break;
     }
 
     return tokenStream; 
