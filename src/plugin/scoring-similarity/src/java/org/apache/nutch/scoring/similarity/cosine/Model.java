@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -35,6 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.nutch.scoring.similarity.util.LuceneAnalyzerUtil.StemFilterType;
 import org.apache.nutch.scoring.similarity.util.LuceneTokenizer;
 import org.apache.nutch.scoring.similarity.util.LuceneTokenizer.TokenizerType;
+import org.apache.nutch.scoring.similarity.util.SynonymsHelper;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,7 @@ public class Model {
   private static final Logger LOG = LoggerFactory.getLogger(Model.class);
   public static boolean isModelCreated = false;
   private static List<String> stopWords;
+  public static HashMap<String,String> synonymMap;
 
   public static synchronized void createModel(Configuration conf) throws IOException {
     if(isModelCreated) {
@@ -67,12 +70,33 @@ public class Model {
           stopWords.add(stopWord);
         }
         LOG.info("Loaded custom stopwords from {}",conf.get("scoring.similarity.stopword.file"));
+        
+        
       }
 
       //Check if user has specified n for ngram cosine model
       int ngram = conf.getInt("scoring.similarity.ngrams", 1);
       LOG.info("Value of ngram: {}",ngram);
-
+      
+      //Check if user has specified keywords file
+      String keyword;
+      HashSet<String> keywordSet = new HashSet<String>();
+      BufferedReader keyBr = new BufferedReader(conf.getConfResourceAsReader(conf.get("cosine.keywords.file")));
+      while((keyword = keyBr.readLine()) != null){
+    	  keywordSet.add(keyword);
+      }
+      
+      synonymMap = new HashMap<String,String>();
+      for(String eachKeyword : keywordSet){
+    	  String allSynonyms = SynonymsHelper.fetchSynonyms(eachKeyword);
+    	  String synonymList[] = allSynonyms.split(" ");
+    	  for(String eachSynonym : synonymList){
+    		  synonymMap.put(eachSynonym, eachKeyword);
+    		  LOG.info(eachSynonym+" "+eachKeyword);
+    	  }
+      }
+      
+      	
       // TODO : Allow for corpus of documents to be provided as gold standard. 
       String line;
       StringBuilder sb = new StringBuilder();
@@ -126,6 +150,9 @@ public class Model {
       tStream.reset();
       while(tStream.incrementToken()) {
         String term = charTermAttribute.toString();
+        if(synonymMap.containsKey(term)){
+        	term = synonymMap.get(term);
+        }
         LOG.debug(term);
         if(termVector.containsKey(term)) {
           int count = termVector.get(term);
