@@ -1463,6 +1463,23 @@ visit https://wiki.apache.org/nutch/SimilarityScoringFilter-->
       in a text file. Each new stopword should be on a new line.
     </description>
 </property>
+ 
+ 
+ <property>
+ <name>cosine.keywords.file</name>
+ <value>keywords.txt</value>
+ </property>
+ 
+ <property>
+	<name>cosine.data.noun</name>
+	<value>data.noun</value>
+ </property>
+ 
+ <property>
+	<name>cosine.data.adj</name>
+	<value>data.adj</value>
+ </property>
+
 
 <!-- language-identifier plugin properties -->
 

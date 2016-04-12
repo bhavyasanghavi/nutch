@@ -32,51 +32,49 @@ import org.apache.nutch.scoring.similarity.SimilarityModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CosineSimilarity implements SimilarityModel{
+public class CosineSimilarity implements SimilarityModel {
 
-  private Configuration conf; 
-  private final static Logger LOG = LoggerFactory
-      .getLogger(CosineSimilarity.class);
+	private Configuration conf;
+	private final static Logger LOG = LoggerFactory.getLogger(CosineSimilarity.class);
 
-  @Override
-  public void setConf(Configuration conf) {
-    this.conf = conf;
-  }
+	@Override
+	public void setConf(Configuration conf) {
+		this.conf = conf;
+	}
 
-  @Override
-  public float setURLScoreAfterParsing(Text url, Content content, Parse parse) {
-    float score = 1;
+	@Override
+	public float setURLScoreAfterParsing(Text url, Content content, Parse parse) {
+		float score = 1;
 
-    try {
-      if(!Model.isModelCreated){
-        Model.createModel(conf);
-      }
-      String metatags = parse.getData().getParseMeta().get("metatag.keyword");
-      String metaDescription = parse.getData().getParseMeta().get("metatag.description");
-      int ngram = conf.getInt("scoring.similarity.ngrams", 1);
-      DocVector docVector = Model.createDocVector(parse.getText()+metaDescription+metatags, ngram);
-      if(docVector!=null){
-        score = Model.computeCosineSimilarity(docVector);
-        LOG.info("Setting score of {} to {}",url, score);
-      }
-      else {
-        throw new Exception("Could not create DocVector from parsed text");
-      }
-    } catch (Exception e) {
-      LOG.error("Error creating Cosine Model, setting scores of urls to 1 : {}", StringUtils.stringifyException(e));
-    }
-    return score;
-  }
+		try {
+			if (!Model.isModelCreated) {
+				Model.createModel(conf);
+			}
+			String metatags = parse.getData().getParseMeta().get("metatag.keyword");
+			String metaDescription = parse.getData().getParseMeta().get("metatag.description");
+			int ngram = conf.getInt("scoring.similarity.ngrams", 1);
+			DocVector docVector = Model.createDocVector(parse.getText() + metaDescription + metatags, ngram);
+			if (docVector != null) {
+				score = Model.computeCosineSimilarity(docVector);
+				LOG.info("Setting score of {} to {}", url, score);
+			} else {
+				throw new Exception("Could not create DocVector from parsed text");
+			}
+		} catch (Exception e) {
+			LOG.error("Error creating Cosine Model, setting scores of urls to 1 : {}",
+					StringUtils.stringifyException(e));
+		}
+		return score;
+	}
 
-  @Override
-  public CrawlDatum distributeScoreToOutlinks(Text fromUrl, ParseData parseData,
-      Collection<Entry<Text, CrawlDatum>> targets, CrawlDatum adjust,
-      int allCount) {
-    float score = Float.parseFloat(parseData.getContentMeta().get(Nutch.SCORE_KEY));
-    for (Entry<Text, CrawlDatum> target : targets) {
-      target.getValue().setScore(score);
-    }
-    return adjust;
-  }
+	@Override
+	public CrawlDatum distributeScoreToOutlinks(Text fromUrl, ParseData parseData,
+			Collection<Entry<Text, CrawlDatum>> targets, CrawlDatum adjust, int allCount) {
+		float score = Float.parseFloat(parseData.getContentMeta().get(Nutch.SCORE_KEY));
+		for (Entry<Text, CrawlDatum> target : targets) {
+			target.getValue().setScore(score);
+		}
+		return adjust;
+	}
 
 }
